@@ -5,12 +5,14 @@ const PORT = 8080; // default port 8080
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 
+//function to generate a random six-character string
 function generateRandomString() {
   const charPool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   const poolLength = charPool.length;
 
   let output = '';
 
+  // take a random position from the charPool string and add to output (*6)
   for (let outputDigit = 0; outputDigit < 6; outputDigit++) {
     charIndex = Math.floor(Math.random() * poolLength)
     output += charPool[charIndex];
@@ -56,6 +58,14 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  const newID = generateRandomString();
+  urlDatabase[newID] = req.body.longURL;
+  //console.log(req.body); // Log the POST request body to the console
+  res.redirect(`/url/:${newID}`);
+  //res.send("Ok"); // Respond with 'Ok' (we will replace this)
+});
+
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id];
+  res.redirect(longURL);
 });
