@@ -53,20 +53,31 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
-  res.render("urls_show", templateVars);
-  res.redirect(templateVars.longURL);  
+    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+    res.render("urls_show", templateVars);
 });
 
 app.post("/urls", (req, res) => {
   const newID = generateRandomString();
   urlDatabase[newID] = req.body.longURL;
   //console.log(req.body); // Log the POST request body to the console
-  res.redirect(`/url/:${newID}`);
+  res.redirect(`/url/${newID}`);
   //res.send("Ok"); // Respond with 'Ok' (we will replace this)
 });
 
 app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
+});
+
+app.post("/urls/:id", (req, res) => {
+    const id = req.params.id;
+    const newLongURL = req.body.longURL;
+
+    if (urlDatabase[id]) {
+      urlDatabase[id] = { longURL: newLongURL }; //overwrite any existing properties
+    } else {
+      urlDatabase[id] = { longURL: newLongURL }; // Create a new entry if it doesn't exist
+    }
+    res.redirect("/urls");
 });
