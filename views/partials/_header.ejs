@@ -17,16 +17,26 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div> 
+      
+      <!-- check if a username alreayd exists -->
+      <% if (!username) { %>   
         <form class="form-inline ml-auto" action="/login" method="POST">
-          <input
-            class="form-control"
-            type="text"
-            name="username"
-            placeholder="Username"
-            style="margin: 0 0.3em"
-          />
-          <button type="submit" class="btn btn-primary">Login</button>
-        </form>
+            <input
+              class="form-control"
+              type="text"
+              name="username"
+              placeholder="Username"
+              style="margin: 0 0.3em"
+            />
+            <button type="submit" class="btn btn-primary">Login</button>
+          </form>
+        <% } else { %>
+          <span class="navbar-text mr-3">Logged in as: <%= username %>!</span>
+          <form class="form-inline" action="/logout" method="POST">
+            <button type="submit" class="btn btn-secondary">Logout</button>
+          </form>
+        <% } %>
+
     </div>
   </nav>
 </header>
