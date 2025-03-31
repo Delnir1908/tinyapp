@@ -150,14 +150,18 @@ app.post("/login", (req, res) => {
     if (users[key].email === email) {
       if (users[key].password === password) {
         res.cookie('user_id', users[key].id);
+        break;
       } else {
         res.statusCode = 403;
-        res.send('403 Forbidden, wrong password.');      
+        res.send('403 Forbidden, wrong password.');
+        break;  
       }      
     }
   }
 
-  res.redirect("/urls");
+  if (res.statusCode === 200) {
+    res.redirect("/urls");
+  }
 });
 
 app.post("/logout", (req, res) => {
@@ -170,11 +174,15 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  if (email.length === 0 ||password.length === 0 || getUserByEmail(email)) {
+  if (email.length === 0 ||password.length === 0) {
     res.statusCode = 400;
-    res.send('400 Bad Request');
+    res.send('400 Bad Request, fields cannot be empty.');
   }
 
+  if (getUserByEmail(email)) {
+    res.statusCode = 400;
+    res.send('400 Bad Request, email already in use.');
+  }
   const user = {
     id: userID,
     email: email,
