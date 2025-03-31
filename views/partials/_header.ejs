@@ -19,19 +19,19 @@
       </div> 
       
       <!-- check if a username alreayd exists -->
-      <% if (!username) { %>   
+      <% if (!user.email) { %>   
         <form class="form-inline ml-auto" action="/login" method="POST">
             <input
               class="form-control"
               type="text"
-              name="username"
-              placeholder="Username"
+              name="email"
+              placeholder="email"
               style="margin: 0 0.3em"
             />
             <button type="submit" class="btn btn-primary">Login</button>
           </form>
         <% } else { %>
-          <span class="navbar-text mr-3">Logged in as: <%= username %>!</span>
+          <span class="navbar-text mr-3">Logged in as: <%= user.email %>!</span>
           <form class="form-inline" action="/logout" method="POST">
             <button type="submit" class="btn btn-secondary">Logout</button>
           </form>
