@@ -51,7 +51,7 @@ const getUserByEmail = function(email) {
     }
   }
 
-  return false;
+  return null;
 
 };
 
@@ -141,7 +141,7 @@ app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  if (email.length === 0 ||password.length === 0 || getUserByEmail(!email)) {
+  if (!email || !password) {
     res.statusCode = 400;
     res.send('400 Bad Request: Fields cannot be empty.');
   }
@@ -180,7 +180,7 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  if (email.length === 0 ||password.length === 0) {
+  if (!email || !password) {
     res.statusCode = 400;
     res.send('400 Bad Request: Fields cannot be empty.');
     return;
