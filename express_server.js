@@ -43,6 +43,19 @@ const users = {
   },
 };
 
+//function to chekck if user email already exists in the database
+const getUserByEmail = function(email) {
+  for (let key in users) {
+    if (key.email === email) {
+      return true;        //return true if match found
+    }
+  }
+
+  return false;
+
+};
+
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -130,6 +143,12 @@ app.post("/register", (req, res) => {
   const userID = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+
+  if (email.length === 0 ||password.length === 0 || getUserByEmail(email)) {
+    res.statusCode = 400;
+    res.send('400 Bad Request');
+  }
+
   const user = {
     id: userID,
     email: email,
