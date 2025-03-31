@@ -46,7 +46,7 @@ const users = {
 //function to chekck if user email already exists in the database
 const getUserByEmail = function(email) {
   for (let key in users) {
-    if (key.email === email) {
+    if (users[key].email === email) {
       return true;        //return true if match found
     }
   }
@@ -130,7 +130,20 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  res.cookie('user_id', req.body.username);
+  const email = req.body.email;
+  const password = req.body.password;
+
+  if (email.length === 0 ||password.length === 0 || getUserByEmail(!email)) {
+    res.statusCode = 400;
+    res.send('400 Bad Request');
+  }
+
+  for (let key in users) {
+    if ( users[key].email === email && users[password] === password) {
+      res.cookie('user_id', users[key].id);
+    }
+  }
+
   res.redirect("/urls");
 });
 
