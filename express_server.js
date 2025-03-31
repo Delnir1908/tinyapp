@@ -104,6 +104,14 @@ app.get("/register", (req, res) => {
   res.render("register",  templateVars);
 });
 
+app.get("/login", (req, res) => {
+  const templateVars = {
+    user: users[req.cookies["user_id"]]
+  };
+  res.render("login", templateVars);
+});
+
+
 app.post("/urls", (req, res) => {
   const newID = generateRandomString();
   urlDatabase[newID] = req.body.longURL;
@@ -139,8 +147,13 @@ app.post("/login", (req, res) => {
   }
 
   for (let key in users) {
-    if ( users[key].email === email && users[password] === password) {
-      res.cookie('user_id', users[key].id);
+    if (users[key].email === email) {
+      if (users[key].password === password) {
+        res.cookie('user_id', users[key].id);
+      } else {
+        res.statusCode = 403;
+        res.send('403 Forbidden, wrong password.');      
+      }      
     }
   }
 
