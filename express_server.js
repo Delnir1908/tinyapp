@@ -146,7 +146,7 @@ app.post("/login", (req, res) => {
     res.send('400 Bad Request: Fields cannot be empty.');
   }
 
-  if (getUserByEmail(!email)) {
+  if (!getUserByEmail(email)) {
     res.statusCode = 400;
     res.send('400 Bad Request: User does not exist.');
   }
