@@ -143,8 +143,14 @@ app.post("/login", (req, res) => {
 
   if (email.length === 0 ||password.length === 0 || getUserByEmail(!email)) {
     res.statusCode = 400;
-    res.send('400 Bad Request');
+    res.send('400 Bad Request: Fields cannot be empty.');
   }
+
+  if (getUserByEmail(!email)) {
+    res.statusCode = 400;
+    res.send('400 Bad Request: User does not exist.');
+  }
+
 
   for (let key in users) {
     if (users[key].email === email) {
@@ -153,7 +159,7 @@ app.post("/login", (req, res) => {
         break;
       } else {
         res.statusCode = 403;
-        res.send('403 Forbidden, wrong password.');
+        res.send('403 Forbidden: Wrong password.');
         break;  
       }      
     }
@@ -176,13 +182,16 @@ app.post("/register", (req, res) => {
 
   if (email.length === 0 ||password.length === 0) {
     res.statusCode = 400;
-    res.send('400 Bad Request, fields cannot be empty.');
+    res.send('400 Bad Request: Fields cannot be empty.');
+    return;
   }
 
   if (getUserByEmail(email)) {
     res.statusCode = 400;
-    res.send('400 Bad Request, email already in use.');
+    res.send('400 Bad Request: Email already in use.');
+    return;
   }
+
   const user = {
     id: userID,
     email: email,
