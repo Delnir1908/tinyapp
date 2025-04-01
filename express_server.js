@@ -81,6 +81,10 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    return res.redirect("/login");
+  }
+
   const templateVars = {
     user: users[req.cookies["user_id"]]
     };
@@ -88,6 +92,9 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
+  if (!urlDatabase.hasOwnProperty(req.params.id)) {
+    return res.status(404).send(`Error 404: ${req.params.id} does not exist.`);
+  }
   const templateVars = { 
     user: users[req.cookies["user_id"]],
     id: req.params.id, 
@@ -96,8 +103,19 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+app.get("/u/:id", (req, res) => {
+  if (!urlDatabase.hasOwnProperty(req.params.id)) {
+    return res.status(404).send(`Error 404: ${req.params.id} does not exist.`);
+  }
+  res.redirect(urlDatabase[req.params.id]);
+});
+
 
 app.get("/register", (req, res) => {
+  if (req.cookies["user_id"]) {
+    return res.redirect("/urls");
+  }
+
   const templateVars = {
     user: users[req.cookies["user_id"]]
     };
@@ -105,6 +123,10 @@ app.get("/register", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
+  if (req.cookies["user_id"]) {
+    return res.redirect("/urls");
+  }
+
   const templateVars = {
     user: users[req.cookies["user_id"]]
   };
@@ -113,11 +135,15 @@ app.get("/login", (req, res) => {
 
 
 app.post("/urls", (req, res) => {
-  const newID = generateRandomString();
-  urlDatabase[newID] = req.body.longURL;
-  //console.log(req.body); // Log the POST request body to the console
-  res.redirect(`/url/${newID}`);
-  //res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  if (!req.cookies["user_id"]) {
+    res.send("You must log in to use this servic.");
+  } else {
+    const newID = generateRandomString();
+    urlDatabase[newID] = req.body.longURL;
+    //console.log(req.body); // Log the POST request body to the console
+    res.redirect(`/url/${newID}`);
+    //res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  }
 });
 
 app.post("/urls/:id/delete", (req, res) => {
