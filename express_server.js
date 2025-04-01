@@ -26,8 +26,14 @@ function generateRandomString() {
 }
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
 const users = {
@@ -55,6 +61,18 @@ const getUserByEmail = function(email) {
 
 };
 
+const urlsForUser = function(id) {
+  const userSpecificDatabase = {};
+
+  for (let key in urlDatabase) {
+    if (urlDatabase[key] === id) {
+      userSpecificDatabase[key] = urlDatabase[key]; 
+    }
+  }
+
+  return userSpecificDatabase;
+}
+
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -73,9 +91,15 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = {
-    urls: urlDatabase,
-    user: users[req.cookies["user_id"]]
+  const user_id = req.cookies["user_id"];
+
+  if (!user_id) {
+    return res.send(`Error 404: You must log in to use this service.`);
+  }
+
+const templateVars = {
+    urls: urlsForUser(user_id),
+    user: users[user_id]
   };
   res.render("urls_index", templateVars);
 });
@@ -92,13 +116,27 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  if (!urlDatabase.hasOwnProperty(req.params.id)) {
-    return res.status(404).send(`Error 404: ${req.params.id} does not exist.`);
+
+  const url_id = req.params.id;
+
+  if (!urlDatabase.hasOwnProperty(url_id)) {
+    return res.status(404).send(`Error 404: ${url_id} does not exist.`);
   }
-  const templateVars = { 
-    user: users[req.cookies["user_id"]],
-    id: req.params.id, 
-    longURL: urlDatabase[req.params.id] 
+
+  const user_id = req.cookies["user_id"];
+
+  if (!user_id) {
+    return res.send(`Error 404: You must log in to use this service.`);
+  }
+
+  if (urlDatabase[url_id].userID !== user_id) {
+    return res.send(`Error: you do not own this url.`);
+  }
+
+  const templateVars = {
+    user: users[user_id],
+    id: url_id, 
+    longURL: urlDatabase[url_id].longURL 
   };
   res.render("urls_show", templateVars);
 });
@@ -107,7 +145,7 @@ app.get("/u/:id", (req, res) => {
   if (!urlDatabase.hasOwnProperty(req.params.id)) {
     return res.status(404).send(`Error 404: ${req.params.id} does not exist.`);
   }
-  res.redirect(urlDatabase[req.params.id]);
+  res.redirect(urlDatabase[req.params.id].longURL);
 });
 
 
@@ -135,32 +173,70 @@ app.get("/login", (req, res) => {
 
 
 app.post("/urls", (req, res) => {
-  if (!req.cookies["user_id"]) {
-    res.send("You must log in to use this servic.");
-  } else {
-    const newID = generateRandomString();
-    urlDatabase[newID] = req.body.longURL;
-    //console.log(req.body); // Log the POST request body to the console
-    res.redirect(`/url/${newID}`);
-    //res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  
+  const user_id = req.cookies["user_id"];
+
+  if (!user_id) {
+    return res.send("You must log in to use this service.");
+  } 
+  
+  const newID = generateRandomString();
+  urlDatabase[newID] = {
+    longURL: req.body.longURL,
+    userID: user_id
   }
+  //console.log(req.body); // Log the POST request body to the console
+  res.redirect(`/urls/${newID}`);
+  //res.send("Ok"); // Respond with 'Ok' (we will replace this)
+
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
+
+  const url_id = req.params.id;
+  const user_id = req.cookies["user_id"];
+
+  if (!urlDatabase.hasOwnProperty(url_id)) {
+    return res.send(`Error 404: ${url_id} does not exist.`);
+  } 
+
+  if (!user_id) {
+    return res.send("You must log in to use this service.");
+  } 
+
+  if (urlDatabase[url_id].userID !== user_id) {
+    return res.send(`Error: you do not own this url.`);
+  }
+
+  delete urlDatabase[url_id];
   res.redirect("/urls");
 });
 
 app.post("/urls/:id", (req, res) => {
-    const id = req.params.id;
-    const newLongURL = req.body.longURL;
 
-    if (urlDatabase[id]) {
-      urlDatabase[id] = { longURL: newLongURL }; //overwrite any existing properties
-    } else {
-      urlDatabase[id] = { longURL: newLongURL }; // Create a new entry if it doesn't exist
-    }
-    res.redirect("/urls");
+  const url_id = req.params.id;
+  const newLongURL = req.body.longURL;
+  const user_id = req.cookies["user_id"];
+
+  if (!urlDatabase.hasOwnProperty(url_id)) {
+    return res.send(`Error 404: ${url_id} does not exist.`);
+  } 
+
+  if (!user_id) {
+    return res.send("You must log in to use this service.");
+  } 
+
+  if (urlDatabase[url_id].userID !== user_id) {
+    return res.send(`Error: you do not own this url.`);
+  }
+  
+  urlDatabase[url_id] = {
+    longURL: newLongURL,
+    userID: user_id
+    }; 
+
+  res.redirect("/urls");  
+
 });
 
 app.post("/login", (req, res) => {
@@ -169,31 +245,26 @@ app.post("/login", (req, res) => {
 
   if (!email || !password) {
     res.statusCode = 400;
-    res.send('400 Bad Request: Fields cannot be empty.');
+    return res.send('400 Bad Request: Fields cannot be empty.');
   }
 
   if (!getUserByEmail(email)) {
     res.statusCode = 400;
-    res.send('400 Bad Request: User does not exist.');
+    return res.send('400 Bad Request: User does not exist.');
   }
 
 
   for (let key in users) {
     if (users[key].email === email) {
       if (users[key].password === password) {
-        res.cookie('user_id', users[key].id);
-        break;
+        return res.cookie('user_id', users[key].id).redirect("/urls");
       } else {
         res.statusCode = 403;
-        res.send('403 Forbidden: Wrong password.');
-        break;  
+        return res.send('403 Forbidden: Wrong password.'); 
       }      
     }
   }
 
-  if (res.statusCode === 200) {
-    res.redirect("/urls");
-  }
 });
 
 app.post("/logout", (req, res) => {
@@ -208,14 +279,12 @@ app.post("/register", (req, res) => {
 
   if (!email || !password) {
     res.statusCode = 400;
-    res.send('400 Bad Request: Fields cannot be empty.');
-    return;
+    return res.send('400 Bad Request: Fields cannot be empty.');
   }
 
   if (getUserByEmail(email)) {
     res.statusCode = 400;
-    res.send('400 Bad Request: Email already in use.');
-    return;
+    return res.send('400 Bad Request: Email already in use.');
   }
 
   const user = {
