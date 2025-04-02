@@ -261,7 +261,7 @@ app.post("/login", (req, res) => {
 
   for (let key in users) {
     if (users[key].email === email) {
-      if (bcrypt.compareSync(password, hashedPassword)) {
+      if (bcrypt.compareSync(password, users[key].password)) {
         return res.cookie('user_id', users[key].id).redirect("/urls");
       } else {
         return res.statusCode(403).send('403 Forbidden: Wrong password.'); 
