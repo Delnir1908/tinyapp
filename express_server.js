@@ -1,5 +1,7 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
+const bcrypt = require("bcryptjs");
+
 
 const app = express();
 const PORT = 8080; // default port 8080
@@ -36,16 +38,18 @@ const urlDatabase = {
   },
 };
 
+//i understand that the hased passwords below should be stored w/o original
+//but i will keep the original password so that i can test my pages
 const users = {
   userRandomID: {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur",
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10),
   },
   user2RandomID: {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk",
+    password: bcrypt.hashSync("dishwasher-funk", 10),
   },
 };
 
@@ -65,7 +69,7 @@ const urlsForUser = function(id) {
   const userSpecificDatabase = {};
 
   for (let key in urlDatabase) {
-    if (urlDatabase[key] === id) {
+    if (urlDatabase[key].userID === id) {
       userSpecificDatabase[key] = urlDatabase[key]; 
     }
   }
@@ -242,6 +246,7 @@ app.post("/urls/:id", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
 
   if (!email || !password) {
     res.statusCode = 400;
@@ -256,11 +261,10 @@ app.post("/login", (req, res) => {
 
   for (let key in users) {
     if (users[key].email === email) {
-      if (users[key].password === password) {
+      if (bcrypt.compareSync(password, hashedPassword)) {
         return res.cookie('user_id', users[key].id).redirect("/urls");
       } else {
-        res.statusCode = 403;
-        return res.send('403 Forbidden: Wrong password.'); 
+        return res.statusCode(403).send('403 Forbidden: Wrong password.'); 
       }      
     }
   }
@@ -276,6 +280,7 @@ app.post("/register", (req, res) => {
   const userID = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
 
   if (!email || !password) {
     res.statusCode = 400;
@@ -290,11 +295,11 @@ app.post("/register", (req, res) => {
   const user = {
     id: userID,
     email: email,
-    password: password
+    password: hashedPassword
   }
 
   users[userID] = user;
-  console.log(user);
+  //console.log(user);
 
   res.cookie('user_id', userID);
   res.redirect("/urls");
