@@ -1,5 +1,5 @@
 const express = require("express");
-const cookieParser = require('cookie-parser');
+const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
 
 
@@ -8,7 +8,11 @@ const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['spring', 'summer', 'fall', 'winter'],
+  maxAge: 60 * 60 * 1000
+}));
 
 //function to generate a random six-character string
 function generateRandomString() {
@@ -57,7 +61,7 @@ const users = {
 const getUserByEmail = function(email) {
   for (let key in users) {
     if (users[key].email === email) {
-      return true;        //return true if match found
+      return users[key];        //return user if match found
     }
   }
 
@@ -95,7 +99,7 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const user_id = req.cookies["user_id"];
+  const user_id = req.session.user_id;
 
   if (!user_id) {
     return res.send(`Error 404: You must log in to use this service.`);
@@ -109,12 +113,12 @@ const templateVars = {
 });
 
 app.get("/urls/new", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res.redirect("/login");
   }
 
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user: users[req.session.user_id]
     };
   res.render("urls_new",templateVars);
 });
@@ -127,7 +131,7 @@ app.get("/urls/:id", (req, res) => {
     return res.status(404).send(`Error 404: ${url_id} does not exist.`);
   }
 
-  const user_id = req.cookies["user_id"];
+  const user_id = req.session.user_id;
 
   if (!user_id) {
     return res.send(`Error 404: You must log in to use this service.`);
@@ -149,28 +153,29 @@ app.get("/u/:id", (req, res) => {
   if (!urlDatabase.hasOwnProperty(req.params.id)) {
     return res.status(404).send(`Error 404: ${req.params.id} does not exist.`);
   }
+  console.log(req.params.id);
   res.redirect(urlDatabase[req.params.id].longURL);
 });
 
 
 app.get("/register", (req, res) => {
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     return res.redirect("/urls");
   }
 
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user: users[req.session.user_id]
     };
   res.render("register",  templateVars);
 });
 
 app.get("/login", (req, res) => {
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     return res.redirect("/urls");
   }
 
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user: users[req.session.user_id]
   };
   res.render("login", templateVars);
 });
@@ -178,7 +183,7 @@ app.get("/login", (req, res) => {
 
 app.post("/urls", (req, res) => {
   
-  const user_id = req.cookies["user_id"];
+  const user_id = req.session.user_id;
 
   if (!user_id) {
     return res.send("You must log in to use this service.");
@@ -198,7 +203,7 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
 
   const url_id = req.params.id;
-  const user_id = req.cookies["user_id"];
+  const user_id = req.session.user_id;
 
   if (!urlDatabase.hasOwnProperty(url_id)) {
     return res.send(`Error 404: ${url_id} does not exist.`);
@@ -220,7 +225,7 @@ app.post("/urls/:id", (req, res) => {
 
   const url_id = req.params.id;
   const newLongURL = req.body.longURL;
-  const user_id = req.cookies["user_id"];
+  const user_id = req.session.user_id;
 
   if (!urlDatabase.hasOwnProperty(url_id)) {
     return res.send(`Error 404: ${url_id} does not exist.`);
@@ -249,22 +254,21 @@ app.post("/login", (req, res) => {
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   if (!email || !password) {
-    res.statusCode = 400;
-    return res.send('400 Bad Request: Fields cannot be empty.');
+    return res.status(400).send('400 Bad Request: Fields cannot be empty.');
   }
 
   if (!getUserByEmail(email)) {
-    res.statusCode = 400;
-    return res.send('400 Bad Request: User does not exist.');
+    return res.status(400).send('400 Bad Request: User does not exist.');
   }
 
 
   for (let key in users) {
     if (users[key].email === email) {
       if (bcrypt.compareSync(password, users[key].password)) {
-        return res.cookie('user_id', users[key].id).redirect("/urls");
+        req.session.user_id = users[key].id
+        return res.redirect("/urls");
       } else {
-        return res.statusCode(403).send('403 Forbidden: Wrong password.'); 
+        return res.status(403).send('403 Forbidden: Wrong password.'); 
       }      
     }
   }
@@ -272,7 +276,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect("/urls");
 });
 
@@ -283,13 +287,11 @@ app.post("/register", (req, res) => {
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   if (!email || !password) {
-    res.statusCode = 400;
-    return res.send('400 Bad Request: Fields cannot be empty.');
+    return res.status(400).send('400 Bad Request: Fields cannot be empty.');
   }
 
   if (getUserByEmail(email)) {
-    res.statusCode = 400;
-    return res.send('400 Bad Request: Email already in use.');
+    return res.status(400).send('400 Bad Request: Email already in use.');
   }
 
   const user = {
@@ -301,7 +303,7 @@ app.post("/register", (req, res) => {
   users[userID] = user;
   //console.log(user);
 
-  res.cookie('user_id', userID);
+  req.session.user_id = userID;
   res.redirect("/urls");
 });
 
