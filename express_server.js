@@ -1,7 +1,7 @@
 const express = require("express");
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
-
+const { getUserByEmail } = require('./helpers.js');
 
 const app = express();
 const PORT = 8080; // default port 8080
@@ -55,18 +55,6 @@ const users = {
     email: "user2@example.com",
     password: bcrypt.hashSync("dishwasher-funk", 10),
   },
-};
-
-//function to chekck if user email already exists in the database
-const getUserByEmail = function(email) {
-  for (let key in users) {
-    if (users[key].email === email) {
-      return users[key];        //return user if match found
-    }
-  }
-
-  return null;
-
 };
 
 const urlsForUser = function(id) {
@@ -257,7 +245,7 @@ app.post("/login", (req, res) => {
     return res.status(400).send('400 Bad Request: Fields cannot be empty.');
   }
 
-  if (!getUserByEmail(email)) {
+  if (!getUserByEmail(email, users)) {
     return res.status(400).send('400 Bad Request: User does not exist.');
   }
 
@@ -290,7 +278,7 @@ app.post("/register", (req, res) => {
     return res.status(400).send('400 Bad Request: Fields cannot be empty.');
   }
 
-  if (getUserByEmail(email)) {
+  if (getUserByEmail(email, users)) {
     return res.status(400).send('400 Bad Request: Email already in use.');
   }
 
