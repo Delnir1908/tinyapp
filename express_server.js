@@ -1,7 +1,7 @@
 const express = require("express");
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
-const { getUserByEmail } = require('./helpers.js');
+const { getUserByEmail, generateRandomString } = require('./helpers.js');
 
 const app = express();
 const PORT = 8080; // default port 8080
@@ -13,23 +13,6 @@ app.use(cookieSession({
   keys: ['spring', 'summer', 'fall', 'winter'],
   maxAge: 60 * 60 * 1000
 }));
-
-//function to generate a random six-character string
-function generateRandomString() {
-  const charPool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const poolLength = charPool.length;
-
-  let output = '';
-
-  // take a random position from the charPool string and add to output (*6)
-  for (let outputDigit = 0; outputDigit < 6; outputDigit++) {
-    charIndex = Math.floor(Math.random() * poolLength)
-    output += charPool[charIndex];
-  }
-
-  return output;
-
-}
 
 const urlDatabase = {
   b6UTxQ: {
@@ -239,7 +222,6 @@ app.post("/urls/:id", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const hashedPassword = bcrypt.hashSync(password, 10);
 
   if (!email || !password) {
     return res.status(400).send('400 Bad Request: Fields cannot be empty.');
