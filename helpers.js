@@ -28,7 +28,22 @@ function generateRandomString() {
 
 }
 
+
+const urlsForUser = function(id, database) {
+  const userSpecificDatabase = {};
+
+  for (let key in database) {
+    if (database[key].userID === id) {
+      userSpecificDatabase[key] = database[key]; 
+    }
+  }
+
+  return userSpecificDatabase;
+}
+
+
 module.exports = { 
   getUserByEmail,
-  generateRandomString
+  generateRandomString,
+  urlsForUser
  };

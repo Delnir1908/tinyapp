@@ -1,7 +1,7 @@
 const express = require("express");
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
-const { getUserByEmail, generateRandomString } = require('./helpers.js');
+const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers.js");
 
 const app = express();
 const PORT = 8080; // default port 8080
@@ -9,8 +9,8 @@ const PORT = 8080; // default port 8080
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
-  name: 'session',
-  keys: ['spring', 'summer', 'fall', 'winter'],
+  name: "session",
+  keys: ["spring", "summer", "fall", "winter"],
   maxAge: 60 * 60 * 1000
 }));
 
@@ -40,19 +40,6 @@ const users = {
   },
 };
 
-const urlsForUser = function(id) {
-  const userSpecificDatabase = {};
-
-  for (let key in urlDatabase) {
-    if (urlDatabase[key].userID === id) {
-      userSpecificDatabase[key] = urlDatabase[key]; 
-    }
-  }
-
-  return userSpecificDatabase;
-}
-
-
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -73,11 +60,11 @@ app.get("/urls", (req, res) => {
   const user_id = req.session.user_id;
 
   if (!user_id) {
-    return res.send(`Error 404: You must log in to use this service.`);
+    return res.send("Error 404: You must log in to use this service.");
   }
 
 const templateVars = {
-    urls: urlsForUser(user_id),
+    urls: urlsForUser(user_id, urlDatabase),
     user: users[user_id]
   };
   res.render("urls_index", templateVars);
@@ -105,11 +92,11 @@ app.get("/urls/:id", (req, res) => {
   const user_id = req.session.user_id;
 
   if (!user_id) {
-    return res.send(`Error 404: You must log in to use this service.`);
+    return res.send("Error 404: You must log in to use this service.");
   }
 
   if (urlDatabase[url_id].userID !== user_id) {
-    return res.send(`Error: you do not own this url.`);
+    return res.send("Error: you do not own this url.");
   }
 
   const templateVars = {
@@ -164,10 +151,10 @@ app.post("/urls", (req, res) => {
   urlDatabase[newID] = {
     longURL: req.body.longURL,
     userID: user_id
-  }
+  };
   //console.log(req.body); // Log the POST request body to the console
   res.redirect(`/urls/${newID}`);
-  //res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  //res.send("Ok"); // Respond with "Ok" (we will replace this)
 
 });
 
@@ -185,7 +172,7 @@ app.post("/urls/:id/delete", (req, res) => {
   } 
 
   if (urlDatabase[url_id].userID !== user_id) {
-    return res.send(`Error: you do not own this url.`);
+    return res.send("Error: you do not own this url.");
   }
 
   delete urlDatabase[url_id];
@@ -207,7 +194,7 @@ app.post("/urls/:id", (req, res) => {
   } 
 
   if (urlDatabase[url_id].userID !== user_id) {
-    return res.send(`Error: you do not own this url.`);
+    return res.send("Error: you do not own this url.");
   }
   
   urlDatabase[url_id] = {
@@ -224,21 +211,21 @@ app.post("/login", (req, res) => {
   const password = req.body.password;
 
   if (!email || !password) {
-    return res.status(400).send('400 Bad Request: Fields cannot be empty.');
+    return res.status(400).send("400 Bad Request: Fields cannot be empty.");
   }
 
   if (!getUserByEmail(email, users)) {
-    return res.status(400).send('400 Bad Request: User does not exist.');
+    return res.status(400).send("400 Bad Request: User does not exist.");
   }
 
 
   for (let key in users) {
     if (users[key].email === email) {
       if (bcrypt.compareSync(password, users[key].password)) {
-        req.session.user_id = users[key].id
+        req.session.user_id = users[key].id;
         return res.redirect("/urls");
       } else {
-        return res.status(403).send('403 Forbidden: Wrong password.'); 
+        return res.status(403).send("403 Forbidden: Wrong password."); 
       }      
     }
   }
@@ -257,18 +244,18 @@ app.post("/register", (req, res) => {
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   if (!email || !password) {
-    return res.status(400).send('400 Bad Request: Fields cannot be empty.');
+    return res.status(400).send("400 Bad Request: Fields cannot be empty.");
   }
 
   if (getUserByEmail(email, users)) {
-    return res.status(400).send('400 Bad Request: Email already in use.');
+    return res.status(400).send("400 Bad Request: Email already in use.");
   }
 
   const user = {
     id: userID,
     email: email,
     password: hashedPassword
-  }
+  };
 
   users[userID] = user;
   //console.log(user);
